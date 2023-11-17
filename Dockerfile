@@ -19,7 +19,7 @@ COPY requirements.txt /app/
 RUN pip install --no-cache-dir triton==2.0.0
 
 # Install any dependencies
-RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the current directory contents into the container at /app
 COPY . /app
