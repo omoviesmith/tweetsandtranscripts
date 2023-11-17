@@ -16,7 +16,7 @@ RUN apt-get update \
 COPY requirements.txt /app/
 
 # # Install system critical dependencies first
-# RUN pip install --no-cache-dir triton==2.0.0
+RUN pip install --no-cache-dir triton==2.1.0
 
 # Install any dependencies
 RUN pip install --no-cache-dir -r requirements.txt
