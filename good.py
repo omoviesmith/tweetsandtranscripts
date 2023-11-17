@@ -42,10 +42,11 @@ folder = 'transcripts'
 
 load_dotenv()  # take environment variables from .env.
 bearer_token = os.getenv("BEARER_TOKEN")
-AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-AWS_REGION = os.getenv("AWS_REGION")
+AWS_ACCESS_KEY_ID = os.getenv("ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("SECRET_ACCESS_KEY")
+AWS_REGION = os.getenv("REGION")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+pyannote_token = os.getenv('pyannote_token')
 
 # creating AWS clients
 s3 = boto3.client('s3', 
@@ -115,7 +116,7 @@ def speaker_diarization(s3_url):
 
     # Load the speaker diarization pipeline
     pipeline = Pipeline.from_pretrained(
-        "pyannote/speaker-diarization-3.0", use_auth_token="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")
+        "pyannote/speaker-diarization-3.0", use_auth_token=pyannote_token)
     pipeline.to(torch.device("cpu"))
 
     # Initialize S3 client

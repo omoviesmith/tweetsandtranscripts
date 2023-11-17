@@ -22,9 +22,9 @@ folder = 'transcripts'
 
 load_dotenv()  # take environment variables from .env.
 bearer_token = os.getenv("BEARER_TOKEN")
-AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-AWS_REGION = os.getenv("AWS_REGION")
+AWS_ACCESS_KEY_ID = os.getenv("ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("SECRET_ACCESS_KEY")
+AWS_REGION = os.getenv("REGION")
 
 # creating AWS clients
 s3 = boto3.client('s3', 
