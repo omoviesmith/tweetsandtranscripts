@@ -8,7 +8,13 @@ import boto3
 import csv
 import io
 import good
+import logging
+import sys
 # from upload_utils import upload_to_s3
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # AWS related variables
 s3_bucket = 'twitsbucket'
@@ -56,6 +62,7 @@ app = Flask(__name__)
 
 @app.route('/process_audio', methods=['POST'])
 def process():
+    app.logger.info('Received request for /process_audio')
     urls = request.json['url']
     # If the URLs are not in a list, convert it to a list
     diarization = request.json['diarization']
@@ -77,19 +84,23 @@ def process():
 
     # Generate file name
     csv_filename = f"transcriptions_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-
+    
     # Upload CSV content to S3 and get the URL
     s3_url = upload_to_s3(csv_content, csv_filename)
+    app.logger.info('Finished processing /process_audio')
     if s3_url:
         return jsonify({'download_link': s3_url}), 200
     else:
         return jsonify({'error': 'Failed to upload file to S3.'}), 500
+    
+    
 
 
 ### Updated `/extract_tweets` Endpoint:
 
 @app.route('/extract_tweets', methods=['GET', 'POST'])
 def extract_tweets():
+    app.logger.info('Received request for /extract_tweets')
     try:
         data = request.json
         if 'username' in data:
@@ -108,6 +119,7 @@ def extract_tweets():
 
         # Upload CSV content to S3 and get the URL
         s3_url = upload_to_s3(csv_content, csv_filename)
+        app.logger.info('Finished request for /extract_tweets')
         if s3_url:
             return jsonify({'download_link': s3_url}), 200
         else:
@@ -116,4 +128,11 @@ def extract_tweets():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run()
+    # Configure Flask logger
+    handler = logging.StreamHandler(stream=sys.stdout)
+    handler.setLevel(logging.INFO)
+    app.logger.addHandler(handler)
+    app.logger.setLevel(logging.INFO)
+
+    app.run(debug=True, host='0.0.0.0')
+    # app.run()
