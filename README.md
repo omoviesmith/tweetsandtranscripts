@@ -5,10 +5,12 @@ A robust audio transcription service built with Flask, designed to extract tweet
 
 ### Features
 
+
 - **YouTube Audio Extraction**: Download audio from YouTube videos seamlessly and store it in an AWS S3 bucket for processing.
 - **Speaker Diarization**: Determine distinct speakers within an audio file, which is vital for transcribing dialogues accurately.
 - **Speech-to-Text**: Convert audio into text using the highly accurate OpenAI Whisper model API.
 - **S3 Storage**: Store and manage audio files and transcription documents in Amazon S3 buckets securely.
+- **Twitter Tweets Extraction**: Extract complete tweets seamlessly from any username.
 
 ### Technologies
 
