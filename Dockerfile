@@ -1,5 +1,5 @@
 # Start from a Python base image
-FROM python:3.10-slim
+FROM python:3.9-slim
 
 # Set environment variables - Ensures python output is sent straight to the terminal without buffering
 ENV PYTHONUNBUFFERED True
