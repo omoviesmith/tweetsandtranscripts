@@ -1,4 +1,6 @@
-from flask import Flask, request, jsonify, make_response
+from flask import Flask, request, jsonify, Response, session, make_response
+from flask.sessions import SecureCookieSessionInterface
+from flask_cors import CORS, cross_origin
 import os
 import datetime
 from flask import Flask, jsonify, request
@@ -59,8 +61,19 @@ def upload_to_s3(file_content, object_name):
         return None
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')  # change this to a secure random string
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'
+app.secret_key = os.getenv('SECRET_KEY')  # set the SECRET_KEY environment variable before running your app
+CORS(app)
+
+@app.route('/')
+@cross_origin(supports_credentials=True)  # Apply CORS to this specific route
+def hello_world():
+    return {"Hello":"World"}
 
 @app.route('/process_audio', methods=['POST'])
+@cross_origin(supports_credentials=True)  # Apply CORS to this specific route
 def process():
     app.logger.info('Received request for /process_audio')
     urls = request.json['url']
@@ -99,6 +112,7 @@ def process():
 ### Updated `/extract_tweets` Endpoint:
 
 @app.route('/extract_tweets', methods=['GET', 'POST'])
+@cross_origin(supports_credentials=True)  # Apply CORS to this specific route
 def extract_tweets():
     app.logger.info('Received request for /extract_tweets')
     try:
