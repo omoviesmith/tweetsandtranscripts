@@ -15,8 +15,8 @@ import sys
 # from upload_utils import upload_to_s3
 
 # Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# logging.basicConfig(level=logging.INFO)
+# logger = logging.getLogger(__name__)
 
 # AWS related variables
 s3_bucket = 'twitsbucket'
@@ -75,7 +75,7 @@ def hello_world():
 @app.route('/process_audio', methods=['POST'])
 @cross_origin(supports_credentials=True)  # Apply CORS to this specific route
 def process():
-    app.logger.info('Received request for /process_audio')
+    
     urls = request.json['url']
     # If the URLs are not in a list, convert it to a list
     diarization = request.json['diarization']
@@ -100,7 +100,7 @@ def process():
     
     # Upload CSV content to S3 and get the URL
     s3_url = upload_to_s3(csv_content, csv_filename)
-    app.logger.info('Finished processing /process_audio')
+    
     if s3_url:
         return jsonify({'download_link': s3_url}), 200
     else:
@@ -114,7 +114,7 @@ def process():
 @app.route('/extract_tweets', methods=['GET', 'POST'])
 @cross_origin(supports_credentials=True)  # Apply CORS to this specific route
 def extract_tweets():
-    app.logger.info('Received request for /extract_tweets')
+    
     try:
         data = request.json
         if 'username' in data:
@@ -133,7 +133,7 @@ def extract_tweets():
 
         # Upload CSV content to S3 and get the URL
         s3_url = upload_to_s3(csv_content, csv_filename)
-        app.logger.info('Finished request for /extract_tweets')
+        
         if s3_url:
             return jsonify({'download_link': s3_url}), 200
         else:
