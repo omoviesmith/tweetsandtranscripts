@@ -77,6 +77,7 @@ def hello_world():
 def process():
     
     urls = request.json['url']
+    
     # If the URLs are not in a list, convert it to a list
     diarization = request.json['diarization']
     if isinstance(urls, str):
@@ -85,6 +86,7 @@ def process():
     results = []
 
     for url in urls:
+        print(url)
         transcription = good.process_audio(url, diarization)
         results.append([url, transcription])
 
@@ -143,10 +145,10 @@ def extract_tweets():
 
 if __name__ == '__main__':
     # Configure Flask logger
-    handler = logging.StreamHandler(stream=sys.stdout)
-    handler.setLevel(logging.INFO)
-    app.logger.addHandler(handler)
-    app.logger.setLevel(logging.INFO)
+    # handler = logging.StreamHandler(stream=sys.stdout)
+    # handler.setLevel(logging.INFO)
+    # app.logger.addHandler(handler)
+    # app.logger.setLevel(logging.INFO)
 
-    app.run(debug=True, host='0.0.0.0')
-    # app.run()
+    # app.run(debug=True, host='0.0.0.0')
+    app.run()

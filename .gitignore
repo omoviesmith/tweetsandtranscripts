@@ -1,4 +1,6 @@
 ext/
+sma/
+lapt/
 .env
 Procfile
 # Elastic Beanstalk Files
