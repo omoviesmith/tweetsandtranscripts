@@ -151,4 +151,4 @@ if __name__ == '__main__':
     # app.logger.setLevel(logging.INFO)
 
     # app.run(debug=True, host='0.0.0.0')
-    app.run()
+    app.run(debug=False, threaded=False)
