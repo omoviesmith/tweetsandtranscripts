@@ -68,7 +68,7 @@ app.secret_key = os.getenv('SECRET_KEY')  # set the SECRET_KEY environment varia
 CORS(app)
 
 @app.route('/')
-@cross_origin(supports_credentials=True)  # Apply CORS to this specific route
+@cross_origin(supports_credentials=True)  # Apply CORS to this specific route now
 def hello_world():
     return {"Hello":"World"}
 
