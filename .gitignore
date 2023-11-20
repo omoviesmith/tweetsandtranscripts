@@ -2,6 +2,7 @@ ext/
 sma/
 new/
 lapt/
+cpu/
 .env
 Procfile
 # Elastic Beanstalk Files
