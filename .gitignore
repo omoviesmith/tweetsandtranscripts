@@ -1,5 +1,6 @@
 ext/
 sma/
+new/
 lapt/
 .env
 Procfile

@@ -7,10 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv()  # load environment variables from .env file
 
-# export 'BEARER_TOKEN'='AAAAAAAAAAAAAAAAAAAAACHGqQEAAAAAH3l%2BlJ8AqwBjCKw83leN84FQJxw%3D2FdcSyni6gm9DmHteNclyIAqrozDnIDS3LWA5wn2KRLEMORp1i'
 bearer_token = os.environ.get("BEARER_TOKEN")
-# bearer_token = "AAAAAAAAAAAAAAAAAAAAACHGqQEAAAAAH3l%2BlJ8AqwBjCKw83leN84FQJxw%3D2FdcSyni6gm9DmHteNclyIAqrozDnIDS3LWA5wn2KRLEMORp1i"
-
 
 def find_user_id(username):
     url = f"https://api.twitter.com/2/users/by/username/{username}"
