@@ -1,5 +1,6 @@
 # Start from a Python base image
-FROM python:3.9-slim
+# FROM python:3.9-slim
+FROM python:3.9
 
 # Set environment variables - Ensures python output is sent straight to the terminal without buffering
 ENV PYTHONUNBUFFERED True
@@ -16,6 +17,7 @@ RUN apt-get update \
 COPY requirements.txt /app/
 
 # Install any dependencies
+RUN pip install torch==1.13.1+cpu torchvision==0.14.1+cpu torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cpu
 # RUN pip install torch==1.7.0+cpu torchvision==0.8.1+cpu torchaudio==0.7.0 -f https://download.pytorch.org/whl/torch_stable.html
 RUN pip install --no-cache-dir -r requirements.txt
 
