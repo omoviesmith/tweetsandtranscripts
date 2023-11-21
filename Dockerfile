@@ -21,7 +21,7 @@ COPY requirements.txt /app/
 # Install PyTorch, torchvision, torchaudio, and CPU only using conda
 RUN conda install pytorch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 cpuonly -c pytorch
 
-# Install any dependencies
+# Install any dependencies (no deps too)
 RUN pip install --no-deps pyannote.audio
 RUN pip install --no-cache-dir -r requirements.txt
 
