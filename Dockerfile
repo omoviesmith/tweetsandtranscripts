@@ -1,3 +1,6 @@
+# Start from a Python base image
+# FROM python:3.9-slim
+
 # Start from a Miniconda base image
 FROM continuumio/miniconda3
 
@@ -11,6 +14,9 @@ WORKDIR /app
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ffmpeg git \
     && rm -rf /var/lib/apt/lists/*
+
+# Copy the requirements file into the container
+COPY requirements.txt /app/
 
 # Install PyTorch, torchvision, torchaudio, and CPU only using conda
 RUN conda install pytorch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 cpuonly -c pytorch
