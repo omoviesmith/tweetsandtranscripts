@@ -563,10 +563,38 @@ def parallel_transcribe_whisper(job_name, s3_audio_url, diarization_timestamps):
 
 
 
+# def process_audio(url, diarization):
+#     # Create a job name using the video ID from the URL
+#     video_id = url.split('/')[-1]  # Assuming the video ID is the last part of the URL
+
+#     # Job name to be used consistently across the transcription process
+#     job_name = 'transcription_job_' + video_id
+
+#     # Extract audio from YouTube video and upload to S3
+#     audio_s3_url = extract_audio_from_yt_video(url)
+#     print(audio_s3_url)
+
+#     if diarization == False:
+#         print("No diarization needed!")
+#         transcription = transcribe_audio_whisper(job_name, audio_s3_url)
+#     # Transcription process based on the number of speakers detected
+#     elif number_of_speakers == 1:
+#         # Perform speaker diarization
+#         diarization_result, number_of_speakers = speaker_diarization(audio_s3_url)
+#         # If there's only one speaker, perform full transcription without diarization
+#         print("There's only one speaker!")
+#         transcription = transcribe_audio_whisper(job_name, audio_s3_url)
+#     else:
+#         # If there are multiple speakers, get the time parts for diarization and transcribe
+#         print("Diarization will be done for multiple speakers!")
+#         parts = get_parts_from_diarization(diarization_result)
+#         transcription = parallel_transcribe_whisper(job_name, audio_s3_url, parts)
+        
+#     return transcription
+
 def process_audio(url, diarization):
     # Create a job name using the video ID from the URL
     video_id = url.split('/')[-1]  # Assuming the video ID is the last part of the URL
-
     # Job name to be used consistently across the transcription process
     job_name = 'transcription_job_' + video_id
 
@@ -574,22 +602,20 @@ def process_audio(url, diarization):
     audio_s3_url = extract_audio_from_yt_video(url)
     print(audio_s3_url)
 
-    if diarization == False:
+    # Perform speaker diarization if required
+    if diarization:
+        diarization_result, number_of_speakers = speaker_diarization(audio_s3_url)
+        if number_of_speakers == 1:
+            print("There's only one speaker!")
+            transcription = transcribe_audio_whisper(job_name, audio_s3_url)
+        else:
+            print("Diarization will be done for multiple speakers!")
+            parts = get_parts_from_diarization(diarization_result)
+            transcription = parallel_transcribe_whisper(job_name, audio_s3_url, parts)
+    else:
         print("No diarization needed!")
         transcription = transcribe_audio_whisper(job_name, audio_s3_url)
-    # Transcription process based on the number of speakers detected
-    elif number_of_speakers == 1:
-        # Perform speaker diarization
-        diarization_result, number_of_speakers = speaker_diarization(audio_s3_url)
-        # If there's only one speaker, perform full transcription without diarization
-        print("There's only one speaker!")
-        transcription = transcribe_audio_whisper(job_name, audio_s3_url)
-    else:
-        # If there are multiple speakers, get the time parts for diarization and transcribe
-        print("Diarization will be done for multiple speakers!")
-        parts = get_parts_from_diarization(diarization_result)
-        transcription = parallel_transcribe_whisper(job_name, audio_s3_url, parts)
-        
+
     return transcription
 
 def extract_transcription_from_yt_video(url):

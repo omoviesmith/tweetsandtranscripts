@@ -73,40 +73,70 @@ def hello_world():
     return {"Hello":"World"}
 
 @app.route('/process_audio', methods=['POST'])
-@cross_origin(supports_credentials=True)  # Apply CORS to this specific route
+@cross_origin(supports_credentials=True)
 def process():
-    
-    urls = request.json['url']
-    
-    # If the URLs are not in a list, convert it to a list
-    diarization = request.json['diarization']
-    if isinstance(urls, str):
-        urls = [urls]
+    try:
+        urls = request.json.get('url', [])
+        diarization = request.json.get('diarization', False)
+        
+        # Ensure URLs are in a list
+        if isinstance(urls, str):
+            urls = [urls]
+        elif not isinstance(urls, list):
+            raise ValueError("URL should be a string or list of strings.")
 
-    results = []
+        # Process each URL
+        results = []
+        for url in urls:
+            print(f"Processing URL: {url}")
+            transcription = good.process_audio(url, diarization)
+            results.append([url, transcription])
 
-    for url in urls:
-        print(url)
-        transcription = good.process_audio(url, diarization)
-        results.append([url, transcription])
-
-    # Generate CSV content:
-    csv_content = io.StringIO()
-    writer = csv.writer(csv_content)
-    writer.writerow(["URL", "Transcription"])
-    writer.writerows(results)
-    csv_content.seek(0)
-
-    # Generate file name
-    csv_filename = f"transcriptions_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-    
-    # Upload CSV content to S3 and get the URL
-    s3_url = upload_to_s3(csv_content, csv_filename)
-    
-    if s3_url:
+        # Generate and upload CSV to S3
+        csv_filename = f"transcriptions_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        s3_url = upload_to_s3(csv_content, csv_filename)
+        
         return jsonify({'download_link': s3_url}), 200
-    else:
-        return jsonify({'error': 'Failed to upload file to S3.'}), 500
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return jsonify({'error': 'An error occurred while processing the audio.'}), 500
+
+# @app.route('/process_audio', methods=['POST'])
+# @cross_origin(supports_credentials=True)  # Apply CORS to this specific route
+# def process():
+    
+#     urls = request.json['url']
+    
+#     # If the URLs are not in a list, convert it to a list
+#     diarization = request.json['diarization']
+#     if isinstance(urls, str):
+#         urls = [urls]
+
+#     results = []
+
+#     for url in urls:
+#         print(url)
+#         transcription = good.process_audio(url, diarization)
+#         results.append([url, transcription])
+
+#     # Generate CSV content:
+#     csv_content = io.StringIO()
+#     writer = csv.writer(csv_content)
+#     writer.writerow(["URL", "Transcription"])
+#     writer.writerows(results)
+#     csv_content.seek(0)
+
+#     # Generate file name
+#     csv_filename = f"transcriptions_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    
+#     # Upload CSV content to S3 and get the URL
+#     s3_url = upload_to_s3(csv_content, csv_filename)
+    
+#     if s3_url:
+#         return jsonify({'download_link': s3_url}), 200
+#     else:
+#         return jsonify({'error': 'Failed to upload file to S3.'}), 500
     
     
 
