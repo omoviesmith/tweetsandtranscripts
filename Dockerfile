@@ -1,6 +1,5 @@
-# Start from a Python base image
-# FROM python:3.9-slim
-FROM python:3.9
+# Start from a Miniconda base image
+FROM continuumio/miniconda3
 
 # Set environment variables - Ensures python output is sent straight to the terminal without buffering
 ENV PYTHONUNBUFFERED True
@@ -13,12 +12,10 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends ffmpeg git \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the requirements file into the container
-COPY requirements.txt /app/
+# Install PyTorch, torchvision, torchaudio, and CPU only using conda
+RUN conda install pytorch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 cpuonly -c pytorch
 
 # Install any dependencies
-RUN pip install torch==1.13.1+cpu torchvision==0.14.1+cpu torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cpu
-# RUN pip install torch==1.7.0+cpu torchvision==0.8.1+cpu torchaudio==0.7.0 -f https://download.pytorch.org/whl/torch_stable.html
 RUN pip install --no-deps pyannote.audio
 RUN pip install --no-cache-dir -r requirements.txt
 
