@@ -36,5 +36,5 @@ COPY . /app
 # Expose the port that Gunicorn will run on
 EXPOSE 8000
 
-# Start Gunicorn with a configuration suitable for production
+# Start Gunicorn with a configuration suitable for production s
 CMD ["gunicorn", "--worker-class=gevent", "--workers=3", "--worker-connections=1000", "--bind=0.0.0.0:8000", "--timeout", "740", "app:app"]
