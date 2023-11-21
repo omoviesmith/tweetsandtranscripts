@@ -92,6 +92,13 @@ def process():
             transcription = good.process_audio(url, diarization)
             results.append([url, transcription])
 
+        # Generate CSV content:
+        csv_content = io.StringIO()
+        writer = csv.writer(csv_content)
+        writer.writerow(["URL", "Transcription"])
+        writer.writerows(results)
+        csv_content.seek(0)
+
         # Generate and upload CSV to S3
         csv_filename = f"transcriptions_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         s3_url = upload_to_s3(csv_content, csv_filename)
