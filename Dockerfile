@@ -37,4 +37,4 @@ COPY . /app
 EXPOSE 8000
 
 # Start Gunicorn with a configuration suitable for production
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "--timeout", "740", "app:app"]
+CMD ["gunicorn", "--worker-class=gevent", "--workers=3", "--worker-connections=1000", "--bind=0.0.0.0:8000", "--timeout", "740", "app:app"]
