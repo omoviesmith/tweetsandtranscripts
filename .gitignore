@@ -2,6 +2,7 @@ ext/
 sma/
 new/
 lapt/
+ebs/
 cpu/
 .env
 Procfile
