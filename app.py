@@ -1,6 +1,9 @@
 from flask import Flask, request, jsonify, Response, session, make_response
 from flask.sessions import SecureCookieSessionInterface
 from flask_cors import CORS, cross_origin
+import youtube_dl
+import yt_dlp as youtube_dl
+import assemblyai as aai
 import os
 import datetime
 from flask import Flask, jsonify, request
@@ -9,7 +12,7 @@ from dotenv import load_dotenv
 import boto3
 import csv
 import io
-import good
+# import good
 import logging
 import sys
 # from upload_utils import upload_to_s3
@@ -27,6 +30,8 @@ bearer_token = os.getenv("BEARER_TOKEN")
 AWS_ACCESS_KEY_ID = os.getenv("ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("SECRET_ACCESS_KEY")
 AWS_REGION = os.getenv("REGION")
+# Assuming the AssemblyAI API key is set as an environment variable
+aai.settings.api_key = os.getenv("ASSEMBLYAI_API_KEY")
 
 # creating AWS clients
 s3 = boto3.client('s3', 
@@ -52,13 +57,60 @@ def upload_to_s3(file_content, object_name):
 
         # Upload the BytesIO object, which is effectively the "file"
         s3_client.upload_fileobj(file_content_bytes_io, default_bucket_name, key)
-        s3_url = f"https://{default_bucket_name}.s3.{AWS_REGION}.amazonaws.com/{key}"
+        s3_url = f"https://{default_bucket_name}.s3.amazonaws.com/{key}"
+
 
         return s3_url
 
     except Exception as e:
         print(f"An error occurred: {e}")
         return None
+    
+# method to extract audio from youtube video
+def parse_s3_url(s3_url):
+    # Assuming the S3 URL is in the standard format of 's3://bucket_name/object_key'
+    # Extract the bucket name and object key from the S3 URL
+    try:
+        bucket_name, object_key = s3_url.replace("s3://", "").split('/', 1)
+        return bucket_name, object_key
+        print(f"Parsed: Bucket name {bucket_name} and Object key {object_key}")
+    except ValueError:
+        raise ValueError("Invalid S3 URL format")
+
+def extract_audio_from_yt_video(url):
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        # Changed the 'outtmpl' to store the file with '.wav' extension
+        'outtmpl': '%(id)s.%(ext)s',  
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            # Changed 'preferredcodec' to 'wav' 
+            'preferredcodec': 'mp3', 
+            'preferredquality': '192',
+        }],
+    }
+
+    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+        info_dict = ydl.extract_info(url, download=True)
+        filename = ydl.prepare_filename(info_dict)
+        # Changed to '.wav' to match the postprocessor codec
+        filename_wav = f"{filename.rsplit('.', 1)[0]}.mp3"
+
+        # Proceed to upload to S3
+        default_bucket_name = "twittrans"
+        key = f'audio/{filename_wav}'
+
+        # Upload to S3
+        with open(filename_wav, 'rb') as file:
+            s3.upload_fileobj(file, default_bucket_name, key)
+            s3_url = f"s3://{default_bucket_name}/{key}"
+            
+
+            bucket_name, object_key = parse_s3_url(s3_url)
+            s3_http_url = f"https://{bucket_name}.s3.amazonaws.com/{object_key}"
+            print(f"Uploaded: Bucket name {bucket_name} and Object key {object_key}")
+
+    return s3_http_url
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')  # change this to a secure random string
@@ -71,6 +123,8 @@ CORS(app)
 @cross_origin(supports_credentials=True)  # Apply CORS to this specific route now
 def hello_world():
     return {"Hello":"World"}
+
+
 
 @app.route('/process_audio', methods=['POST'])
 @cross_origin(supports_credentials=True)
@@ -89,7 +143,21 @@ def process():
         results = []
         for url in urls:
             print(f"Processing URL: {url}")
-            transcription = good.process_audio(url, diarization)
+            
+            # Extract audio from YouTube video and upload to S3
+            s3_audio_url = extract_audio_from_yt_video(url)
+            print(f"Audio file uploaded to S3: {s3_audio_url}")
+            
+            # Use AssemblyAI API to transcribe the audio
+            config = aai.TranscriptionConfig(speaker_labels=diarization)
+            transcript = aai.Transcriber().transcribe(s3_audio_url, config)
+            
+            # Concatenate transcriptions with speaker labels
+            transcription = ''
+            for utterance in transcript.utterances:
+                transcription += f"Speaker {utterance.speaker}: {utterance.text}\n"
+            
+            # Add the transcription result for the current video URL to the results list
             results.append([url, transcription])
 
         # Generate CSV content:
@@ -108,6 +176,43 @@ def process():
     except Exception as e:
         print(f"An error occurred: {e}")
         return jsonify({'error': 'An error occurred while processing the audio.'}), 500
+
+# @app.route('/process_audio', methods=['POST'])
+# @cross_origin(supports_credentials=True)
+# def process():
+#     try:
+#         urls = request.json.get('url', [])
+#         diarization = request.json.get('diarization', False)
+        
+#         # Ensure URLs are in a list
+#         if isinstance(urls, str):
+#             urls = [urls]
+#         elif not isinstance(urls, list):
+#             raise ValueError("URL should be a string or list of strings.")
+
+#         # Process each URL
+#         results = []
+#         for url in urls:
+#             print(f"Processing URL: {url}")
+#             transcription = good.process_audio(url, diarization)
+#             results.append([url, transcription])
+
+#         # Generate CSV content:
+#         csv_content = io.StringIO()
+#         writer = csv.writer(csv_content)
+#         writer.writerow(["URL", "Transcription"])
+#         writer.writerows(results)
+#         csv_content.seek(0)
+
+#         # Generate and upload CSV to S3
+#         csv_filename = f"transcriptions_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+#         s3_url = upload_to_s3(csv_content, csv_filename)
+        
+#         return jsonify({'download_link': s3_url}), 200
+
+#     except Exception as e:
+#         print(f"An error occurred: {e}")
+#         return jsonify({'error': 'An error occurred while processing the audio.'}), 500
 
 # @app.route('/process_audio', methods=['POST'])
 # @cross_origin(supports_credentials=True)  # Apply CORS to this specific route

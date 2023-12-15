@@ -4,6 +4,7 @@ new/
 lapt/
 ebs/
 cpu/
+tnt/
 .env
 Procfile
 # Elastic Beanstalk Files
