@@ -1,8 +1,8 @@
 # Start from a Python base image
-# FROM python:3.9-slim
+FROM python:3.9-slim
 
 # Start from a Miniconda base image
-FROM continuumio/miniconda3
+# FROM continuumio/miniconda3
 
 # Set environment variables - Ensures python output is sent straight to the terminal without buffering
 ENV PYTHONUNBUFFERED True
@@ -19,7 +19,7 @@ RUN apt-get update \
 COPY requirements.txt /app/
 
 # Install PyTorch, torchvision, torchaudio, and CPU only using conda
-RUN conda install pytorch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 cpuonly -c pytorch
+# RUN conda install pytorch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 cpuonly -c pytorch
 
 # Install gunicorn
 RUN pip install gunicorn
