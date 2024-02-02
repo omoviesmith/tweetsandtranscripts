@@ -5,6 +5,7 @@ lapt/
 ebs/
 cpu/
 tnt/
+venv/
 .env
 Procfile
 # Elastic Beanstalk Files

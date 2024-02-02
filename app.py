@@ -9,6 +9,7 @@ import datetime
 from flask import Flask, jsonify, request
 from snscrape import main
 from dotenv import load_dotenv
+import botocore
 import boto3
 import csv
 import io
@@ -44,7 +45,8 @@ def upload_to_s3(file_content, object_name):
     s3_client = boto3.client('s3', 
                              aws_access_key_id=AWS_ACCESS_KEY_ID, 
                              aws_secret_access_key=AWS_SECRET_ACCESS_KEY, 
-                             region_name=AWS_REGION)
+                             region_name=AWS_REGION,
+                             config=botocore.config.Config(connect_timeout=15, read_timeout=15))
     
     default_bucket_name = "twittrans"
     key = f'transcriptions/{object_name}'
@@ -63,6 +65,13 @@ def upload_to_s3(file_content, object_name):
         return s3_url
 
     except Exception as e:
+                    # Upload operations...
+        # except s3.exceptions.ReadTimeoutError:
+        #     # Handle read timeout specific logic
+        # except s3.exceptions.ConnectTimeoutError:
+        #     # Handle connection timeout specific logic
+        # except s3.exceptions.BotoCoreError as e:
+        #     # Handle other boto3-related errors
         print(f"An error occurred: {e}")
         return None
     
@@ -79,6 +88,8 @@ def parse_s3_url(s3_url):
 
 def extract_audio_from_yt_video(url):
     ydl_opts = {
+        'socket_timeout': 100,  # Set your timeout duration in seconds
+        'retries': 10,  # Number of retries for http/https requests on 
         'format': 'bestaudio/best',
         # Changed the 'outtmpl' to store the file with '.wav' extension
         'outtmpl': '%(id)s.%(ext)s',  
@@ -126,56 +137,189 @@ def hello_world():
 
 
 
+# @app.route('/process_audio', methods=['POST'])
+# @cross_origin(supports_credentials=True)
+# def process():
+#     try:
+#         urls = request.json.get('url', [])
+#         diarization = request.json.get('diarization', False)
+        
+#         # Ensure URLs are in a list
+#         if isinstance(urls, str):
+#             urls = [urls]
+#         elif not isinstance(urls, list):
+#             raise ValueError("URL should be a string or list of strings.")
+
+#         # Process each URL
+#         results = []
+
+#         if not diarization:
+#             for url in urls:
+#                 print(f"Processing URL: {url}")
+                
+#                 # Extract audio from YouTube video and upload to S3
+#                 s3_audio_url = extract_audio_from_yt_video(url)
+#                 print(f"Audio file uploaded to S3: {s3_audio_url}")
+                
+#                 # Use AssemblyAI API to transcribe the audio
+#                 config = aai.TranscriptionConfig(speaker_labels=diarization)
+#                 transcript = aai.Transcriber().transcribe(s3_audio_url, config)
+                
+#                 # Concatenate transcriptions with speaker labels
+#                 transcription = ''
+#                 for utterance in transcript.utterances:
+#                     transcription += f"Speaker {utterance.speaker}: {utterance.text}\n"
+                
+#                 # Add the transcription result for the current video URL to the results list
+#                 results.append([url, transcription])
+
+#         if diarization:
+#             # Group utterances by speaker
+#             transcriptions_by_speaker = {}
+#             # print(f"Processing URL: {url}")
+#             for utterance in transcript.utterances:
+#                 speaker = utterance.speaker
+#                 if speaker not in transcriptions_by_speaker:
+#                     transcriptions_by_speaker[speaker] = []
+#                 transcriptions_by_speaker[speaker].append(utterance.text)
+            
+#             # Concatenate all texts for each speaker
+#             transcription = ''
+#             for speaker, texts in transcriptions_by_speaker.items():
+#                 speaker_text = f"Speaker {speaker}: {' '.join(texts)}\n"
+#                 transcription += speaker_text
+#         else:
+#             transcription = transcript.text
+
+#         # Generate CSV content:
+#         csv_content = io.StringIO()
+#         writer = csv.writer(csv_content)
+#         writer.writerow(["URL", "Transcription"])
+#         writer.writerows(results)
+#         csv_content.seek(0)
+
+#         # Generate and upload CSV to S3
+#         csv_filename = f"transcriptions_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+#         s3_url = upload_to_s3(csv_content, csv_filename)
+        
+#         return jsonify({'download_link': s3_url}), 200
+
+#     except Exception as e:
+#         print(f"An error occurred: {e}")
+#         return jsonify({'error': 'An error occurred while processing the audio.'}), 500
+
+
 @app.route('/process_audio', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def process():
     try:
         urls = request.json.get('url', [])
         diarization = request.json.get('diarization', False)
-        
+
         # Ensure URLs are in a list
         if isinstance(urls, str):
             urls = [urls]
         elif not isinstance(urls, list):
             raise ValueError("URL should be a string or list of strings.")
 
-        # Process each URL
-        results = []
-        for url in urls:
-            print(f"Processing URL: {url}")
-            
-            # Extract audio from YouTube video and upload to S3
-            s3_audio_url = extract_audio_from_yt_video(url)
+        # Initialize CSV content storage
+        csv_content = io.StringIO()
+        csv_writer = csv.writer(csv_content)
+
+        if diarization:
+            # Process for diarization enabled (handling a single URL for simplicity)
+            print(f"Processing URL for diarization: {urls[0]}")
+
+            # Assuming `extract_audio_from_yt_video` returns a direct URL to the audio file
+            s3_audio_url = extract_audio_from_yt_video(urls[0])
             print(f"Audio file uploaded to S3: {s3_audio_url}")
-            
-            # Use AssemblyAI API to transcribe the audio
+
+            # Use AssemblyAI API to transcribe the audio with diarization enabled
             config = aai.TranscriptionConfig(speaker_labels=diarization)
             transcript = aai.Transcriber().transcribe(s3_audio_url, config)
-            
-            # Concatenate transcriptions with speaker labels
-            transcription = ''
-            for utterance in transcript.utterances:
-                transcription += f"Speaker {utterance.speaker}: {utterance.text}\n"
-            
-            # Add the transcription result for the current video URL to the results list
-            results.append([url, transcription])
 
-        # Generate CSV content:
-        csv_content = io.StringIO()
-        writer = csv.writer(csv_content)
-        writer.writerow(["URL", "Transcription"])
-        writer.writerows(results)
+            # Write the header for diarization format
+            csv_writer.writerow(["Speaker", "Utterance"])
+
+            # Write each utterance directly, maintaining conversational order
+            for utterance in transcript.utterances:
+                csv_writer.writerow([f"Speaker {utterance.speaker}", utterance.text])
+        
+        else:
+            # Process for multiple URLs without diarization
+            csv_writer.writerow(["URL", "Transcription"])
+            for url in urls:
+                print(f"Processing URL: {url}")
+                s3_audio_url = extract_audio_from_yt_video(url)
+                print(f"Audio file uploaded to S3: {s3_audio_url}")
+
+                # Use AssemblyAI API to transcribe the audio without diarization
+                transcript = aai.Transcriber().transcribe(s3_audio_url)
+
+                # Directly use the transcript's text
+                transcription = transcript.text
+                csv_writer.writerow([url, transcription])
+
+        # Seek to the beginning of the StringIO object to prepare for reading
         csv_content.seek(0)
 
-        # Generate and upload CSV to S3
+        # Upload CSV content to S3 and get the URL
         csv_filename = f"transcriptions_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         s3_url = upload_to_s3(csv_content, csv_filename)
-        
+
         return jsonify({'download_link': s3_url}), 200
 
     except Exception as e:
         print(f"An error occurred: {e}")
         return jsonify({'error': 'An error occurred while processing the audio.'}), 500
+
+# @app.route('/process_audio', methods=['POST'])
+# @cross_origin(supports_credentials=True)
+# def process():
+#     try:
+#         urls = request.json.get('url', [])
+#         diarization = request.json.get('diarization', False)
+        
+#         # Ensure URLs are in a list
+#         if isinstance(urls, str):
+#             urls = [urls]
+#         elif not isinstance(urls, list):
+#             raise ValueError("URL should be a string or list of strings.")
+        
+#         # Assuming only processing a single URL with diarization for this example
+#         if diarization:
+#             url = urls[0]  # Only use the first URL if diarization is true for simplicity in this example
+#             print(f"Processing URL: {url}")
+            
+#             # Use AssemblyAI API to transcribe the audio with diarization enabled
+#             config = aai.TranscriptionConfig(speaker_labels=diarization)
+#             transcript = aai.Transcriber().transcribe(url, config)  # Adjust this call if needed to match your actual method for transcription
+            
+#             # Prepare CSV content
+#             csv_content = io.StringIO()
+#             csv_writer = csv.writer(csv_content)
+#             csv_writer.writerow(["Speaker", "Utterance"])
+            
+#             # Write each utterance directly, maintaining conversational order
+#             for utterance in transcript.utterances:
+#                 csv_writer.writerow([f"Speaker {utterance.speaker}", utterance.text])
+        
+#         else:
+#             # Handle non-diarization case (not covered in detail here)
+#             pass
+
+#         csv_content.seek(0)
+
+#         # Proceed with your method `upload_to_s3` to upload CSV to S3 and return the URL
+#         # This part remains unchanged
+#         csv_filename = f"transcriptions_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+#         s3_url = upload_to_s3(csv_content, csv_filename)
+        
+#         return jsonify({'download_link': s3_url}), 200
+
+#     except Exception as e:
+#         print(f"An error occurred: {e}")
+#         return jsonify({'error': 'An error occurred while processing the audio.'}), 500
 
 # @app.route('/process_audio', methods=['POST'])
 # @cross_origin(supports_credentials=True)
