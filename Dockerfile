@@ -27,7 +27,7 @@ RUN echo $PATH
 RUN which gunicorn || echo "gunicorn not found"
 
 # Install any dependencies (no deps too)
-RUN pip install --no-deps pyannote.audio
+# RUN pip install --no-deps pyannote.audio
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the current directory contents into the container at /app
