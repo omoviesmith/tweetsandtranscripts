@@ -23,7 +23,8 @@ import sys
 # logger = logging.getLogger(__name__)
 
 # AWS related variables
-s3_bucket = 'twitsbucket'
+# s3_bucket = 'twitsbucket'
+s3_bucket = 'twittrans'
 folder = 'transcripts'
 
 load_dotenv()  # take environment variables from .env.
